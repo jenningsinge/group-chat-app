@@ -100,7 +100,7 @@
         <hr />
         <ul class="nav nav-pills flex-column mb-auto">
           <li class="nav-item">
-            <a href="#" class="nav-link active" aria-current="page">Welcome</a>
+            <a href="/" class="nav-link active" aria-current="page">Welcome</a>
           </li>
           <li>
             <a href="#" class="nav-link text-white">Dashboard</a>
@@ -189,11 +189,37 @@
     ></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
-      const socket = io();
-
       const messages = document.getElementById("messagesList");
       const form = document.getElementById("sendMessageForm");
       const input = document.getElementById("messageInput");
+      const chsList = document.querySelector(".nav-pills");
+
+      const getChs = async (chsList) => {
+        const res = await fetch("/channels");
+        const chs = await res.json();
+        chs.forEach((ch) => {
+          const markup = `
+            <li>
+              <a href="/${ch}" class="nav-link text-white">${ch}</a>
+            </li>
+          `;
+          chsList.insertAdjacentHTML("beforeend", markup);
+        });
+      };
+      getChs(chsList);
+
+      const getMessages = async (msgsList) => {
+        const res = await fetch("/messages");
+        const msgs = await res.json();
+        msgs.forEach((msg) => {
+          const item = document.createElement("li");
+          item.textContent = msg;
+          msgsList.appendChild(item);
+        });
+      };
+      getMessages(messages);
+
+      const socket = io();
 
       form.addEventListener("submit", (e) => {
         e.preventDefault();
@@ -214,9 +240,26 @@
       const channelDescriptionInput = document.getElementById(
         "channelDescriptionInput"
       );
+      const createChannel = async (ch, desc) => {
+        const res = await fetch("/channels", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ch, desc }),
+        });
+        const data = await res.json();
+        const markup = `
+            <li>
+              <a href="/${data.ch}" class="nav-link text-white">${data.ch}</a>
+            </li>
+          `;
+        chsList.insertAdjacentHTML("beforeend", markup);
+      };
       newChannelForm.addEventListener("submit", (e) => {
         e.preventDefault();
         console.log(channelNameInput.value, channelDescriptionInput.value);
+        createChannel(channelNameInput.value, channelDescriptionInput.value);
       });
     </script>
   </body>
