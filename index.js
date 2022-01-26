@@ -6,8 +6,10 @@ const path = require("path");
 const { Server } = require("socket.io");
 const io = new Server(server);
 
-const messages = [];
-const channels = ["Welcome", "Test1", "Test2"];
+const channels = new Set();
+channels.add("Welcome");
+const messages = new Map();
+messages.set("Welcome", []);
 
 app.use(express.json());
 
@@ -21,23 +23,25 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-app.get("/messages", (req, res) => {
-  res.send(messages);
-});
-
 app.get("/channels", (req, res) => {
-  res.send(channels);
+  res.send([...channels]);
 });
 
 app.post("/channels", (req, res) => {
-  channels.push(req.body.ch);
+  channels.add(req.body.ch);
+  messages.set(req.body.ch, []);
   res.send(req.body);
 });
 
+app.get("/:channel", (req, res) => {
+  res.send(messages.get(req.params.channel));
+});
+
 io.on("connection", (socket) => {
-  socket.on("chat message", (msg) => {
-    messages.push(msg);
-    io.emit("chat message", msg);
+  socket.on("chat message", (chat) => {
+    const { ch, msg } = chat;
+    messages.get(ch).push(msg);
+    io.emit("chat message", chat);
   });
 
   socket.on("disconnect", () => {

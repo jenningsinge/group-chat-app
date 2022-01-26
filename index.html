@@ -98,23 +98,7 @@
           </div>
         </div>
         <hr />
-        <ul class="nav nav-pills flex-column mb-auto">
-          <li class="nav-item">
-            <a href="/" class="nav-link active" aria-current="page">Welcome</a>
-          </li>
-          <li>
-            <a href="#" class="nav-link text-white">Dashboard</a>
-          </li>
-          <li>
-            <a href="#" class="nav-link text-white">Orders</a>
-          </li>
-          <li>
-            <a href="#" class="nav-link text-white">Products</a>
-          </li>
-          <li>
-            <a href="#" class="nav-link text-white">Customers</a>
-          </li>
-        </ul>
+        <ul class="nav nav-pills flex-column mb-auto"></ul>
         <hr />
         <div class="dropdown">
           <a
@@ -146,7 +130,7 @@
         </div>
       </div>
       <div class="d-flex flex-column w-100 p-3 text-white bg-dark">
-        <span class="fs-4">Channels</span>
+        <span class="fs-4" id="channelHeader">Welcome</span>
         <hr />
         <ul class="mb-auto" id="messagesList"></ul>
         <form id="sendMessageForm">
@@ -189,10 +173,17 @@
     ></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
-      const messages = document.getElementById("messagesList");
-      const form = document.getElementById("sendMessageForm");
-      const input = document.getElementById("messageInput");
+      if (!window.location.hash) {
+        window.location.hash = "#Welcome";
+      }
+      let curCh = window.location.hash.slice(1);
+
+      const msgsList = document.getElementById("messagesList");
+      const sendMsgForm = document.getElementById("sendMessageForm");
+      const msgInput = document.getElementById("messageInput");
       const chsList = document.querySelector(".nav-pills");
+      const chHeader = document.querySelector("#channelHeader");
+      chHeader.textContent = curCh;
 
       const getChs = async (chsList) => {
         const res = await fetch("/channels");
@@ -200,7 +191,9 @@
         chs.forEach((ch) => {
           const markup = `
             <li>
-              <a href="/${ch}" class="nav-link text-white">${ch}</a>
+              <a href="#${ch}" class="nav-link ${
+            ch === curCh ? "active" : ""
+          } text-white">${ch}</a>
             </li>
           `;
           chsList.insertAdjacentHTML("beforeend", markup);
@@ -208,8 +201,25 @@
       };
       getChs(chsList);
 
+      chsList.addEventListener("click", (e) => {
+        const clicked = e.target.closest(".nav-link");
+        curCh = clicked.getAttribute("href").slice(1);
+        const links = Array.from(chsList.querySelectorAll("a"));
+        links.forEach((link) => {
+          if (link.classList.contains("active")) {
+            link.classList.remove("active");
+          }
+          if (link.getAttribute("href").slice(1) === curCh) {
+            link.classList.add("active");
+          }
+        });
+        msgsList.innerHTML = "";
+        getMessages(msgsList);
+        chHeader.textContent = curCh;
+      });
+
       const getMessages = async (msgsList) => {
-        const res = await fetch("/messages");
+        const res = await fetch(`/${curCh}`);
         const msgs = await res.json();
         msgs.forEach((msg) => {
           const item = document.createElement("li");
@@ -217,27 +227,28 @@
           msgsList.appendChild(item);
         });
       };
-      getMessages(messages);
+      getMessages(msgsList);
 
       const socket = io();
 
-      form.addEventListener("submit", (e) => {
+      sendMsgForm.addEventListener("submit", (e) => {
         e.preventDefault();
-        if (input.value) {
-          socket.emit("chat message", input.value);
-          input.value = "";
+        if (msgInput.value) {
+          socket.emit("chat message", { ch: curCh, msg: msgInput.value });
+          msgInput.value = "";
         }
       });
 
-      socket.on("chat message", (msg) => {
+      socket.on("chat message", (chat) => {
         const item = document.createElement("li");
+        const { ch, msg } = chat;
         item.textContent = msg;
-        messages.appendChild(item);
+        msgsList.appendChild(item);
       });
 
-      const newChannelForm = document.getElementById("newChannelForm");
-      const channelNameInput = document.getElementById("channelNameInput");
-      const channelDescriptionInput = document.getElementById(
+      const newChForm = document.getElementById("newChannelForm");
+      const chNameInput = document.getElementById("channelNameInput");
+      const chDescriptionInput = document.getElementById(
         "channelDescriptionInput"
       );
       const createChannel = async (ch, desc) => {
@@ -251,15 +262,16 @@
         const data = await res.json();
         const markup = `
             <li>
-              <a href="/${data.ch}" class="nav-link text-white">${data.ch}</a>
+              <a href="#${data.ch}" class="nav-link text-white">${data.ch}</a>
             </li>
           `;
         chsList.insertAdjacentHTML("beforeend", markup);
       };
-      newChannelForm.addEventListener("submit", (e) => {
+      newChForm.addEventListener("submit", (e) => {
         e.preventDefault();
-        console.log(channelNameInput.value, channelDescriptionInput.value);
-        createChannel(channelNameInput.value, channelDescriptionInput.value);
+        createChannel(chNameInput.value, chDescriptionInput.value);
+        chNameInput.value = "";
+        chDescriptionInput.value = "";
       });
     </script>
   </body>
