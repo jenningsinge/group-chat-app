@@ -65,7 +65,7 @@
                         autocomplete="off"
                       />
                     </div>
-                    <div class="mb-3">
+                    <!-- <div class="mb-3">
                       <label for="channelDescriptionInput" class="form-label">
                         Channel description
                       </label>
@@ -74,7 +74,7 @@
                         id="channelDescriptionInput"
                         rows="3"
                       ></textarea>
-                    </div>
+                    </div> -->
                   </div>
                   <div class="modal-footer">
                     <button
@@ -219,7 +219,7 @@
       });
 
       const getMessages = async (msgsList) => {
-        const res = await fetch(`/${curCh}`);
+        const res = await fetch(`/channels/${curCh}`);
         const msgs = await res.json();
         msgs.forEach((msg) => {
           const item = document.createElement("li");
@@ -234,44 +234,51 @@
       sendMsgForm.addEventListener("submit", (e) => {
         e.preventDefault();
         if (msgInput.value) {
-          socket.emit("chat message", { ch: curCh, msg: msgInput.value });
+          socket.emit("chat message", {
+            channel: curCh,
+            message: msgInput.value,
+          });
           msgInput.value = "";
         }
       });
 
       socket.on("chat message", (chat) => {
-        const item = document.createElement("li");
-        const { ch, msg } = chat;
-        item.textContent = msg;
-        msgsList.appendChild(item);
+        const { channel, message } = chat;
+        if (channel === curCh) {
+          const item = document.createElement("li");
+          item.textContent = message;
+          msgsList.appendChild(item);
+        }
       });
 
       const newChForm = document.getElementById("newChannelForm");
       const chNameInput = document.getElementById("channelNameInput");
-      const chDescriptionInput = document.getElementById(
-        "channelDescriptionInput"
-      );
+      // const chDescriptionInput = document.getElementById(
+      //   "channelDescriptionInput"
+      // );
       const createChannel = async (ch, desc) => {
         const res = await fetch("/channels", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ ch, desc }),
+          body: JSON.stringify({ channel: ch }),
         });
-        const data = await res.json();
-        const markup = `
-            <li>
-              <a href="#${data.ch}" class="nav-link text-white">${data.ch}</a>
-            </li>
-          `;
-        chsList.insertAdjacentHTML("beforeend", markup);
+        if (res.status === 201) {
+          const markup = `
+              <li>
+                <a href="#${ch}" class="nav-link text-white">${ch}</a>
+              </li>
+            `;
+          chsList.insertAdjacentHTML("beforeend", markup);
+        }
+        // const { channel } = await res.json();
       };
       newChForm.addEventListener("submit", (e) => {
         e.preventDefault();
-        createChannel(chNameInput.value, chDescriptionInput.value);
+        createChannel(chNameInput.value);
         chNameInput.value = "";
-        chDescriptionInput.value = "";
+        // chDescriptionInput.value = "";
       });
     </script>
   </body>
