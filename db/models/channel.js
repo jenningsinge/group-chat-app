@@ -6,10 +6,12 @@ const ChannelSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  messages: {
-    type: [String],
-    required: true,
-  },
+  messages: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message",
+    },
+  ],
 });
 
 module.exports = mongoose.model("Channel", ChannelSchema);
