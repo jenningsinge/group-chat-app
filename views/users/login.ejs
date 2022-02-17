@@ -1,0 +1,19 @@
+<% layout('boilerplate') %>
+
+<div class="container">
+  <div class="row vh-100 align-items-center">
+    <div class="col-4 offset-4">
+      <h1 class="text-center">Login</h1>
+      <form
+        action="/login"
+        method="post"
+        class="needs-validation mb-3"
+        novalidate
+      >
+        <%- include('form') %>
+        <button type="submit" class="btn btn-primary">Login</button>
+      </form>
+      <a href="/register" class="d-block text-center">Register</a>
+    </div>
+  </div>
+</div>

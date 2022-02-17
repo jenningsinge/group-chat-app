@@ -10,13 +10,14 @@ const app = express();
 const http = require("http");
 const server = http.createServer(app);
 const path = require("path");
+const ejsMate = require("ejs-mate");
 
 // socket.io
 const { Server } = require("socket.io");
 const io = new Server(server);
 
 // MongoDB/Mongoose
-const dbUrl = process.env.DB_URL || "mongodb://localhost:27017/groupChatApp";
+const dbUrl = process.env.DB_URL;
 const mongoose = require("mongoose");
 mongoose
   .connect(dbUrl)
@@ -40,7 +41,7 @@ const LocalStrategy = require("passport-local");
 
 // Sessions
 const MongoStore = require("connect-mongo");
-const secret = process.env.SECRET || "thisshouldbeabettersecret";
+const secret = process.env.SECRET;
 app.use(
   session({
     secret,
@@ -78,6 +79,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// HTML Templating w/ EJS
+app.engine("ejs", ejsMate);
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "/views"));
+
+// Static Files
+app.use(express.static(path.join(__dirname, "public")));
+
 // Middleware
 const isLoggedIn = (req, res, next) => {
   if (!req.isAuthenticated()) {
@@ -89,11 +98,11 @@ const isLoggedIn = (req, res, next) => {
 
 // Routes
 app.get("/", isLoggedIn, (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+  res.render("index.ejs");
 });
 
 app.get("/register", (req, res) => {
-  res.sendFile(path.join(__dirname, "register.html"));
+  res.render("users/register.ejs");
 });
 
 app.post("/register", async (req, res) => {
@@ -111,7 +120,7 @@ app.post("/register", async (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  res.sendFile(path.join(__dirname, "login.html"));
+  res.render("users/login.ejs");
 });
 
 app.post(
@@ -173,7 +182,7 @@ io.on("connection", (socket) => {
   });
 });
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT;
 server.listen(port, () => {
   console.log(`listening on port ${port}`);
 });
